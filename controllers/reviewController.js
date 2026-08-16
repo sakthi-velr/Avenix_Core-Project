@@ -1,4 +1,6 @@
+const mongoose = require('mongoose');
 const Review = require('../models/Review');
+
 
 exports.getPublicReviews = async (req, res) => {
   try {
@@ -53,6 +55,10 @@ exports.getAdminReviews = async (req, res) => {
 exports.approveReview = async (req, res) => {
   const { id } = req.params;
 
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ message: 'Invalid ID format' });
+  }
+
   try {
     const review = await Review.findByIdAndUpdate(id, { status: 'approved' }, { new: true });
     if (!review) {
@@ -67,6 +73,10 @@ exports.approveReview = async (req, res) => {
 exports.hideReview = async (req, res) => {
   const { id } = req.params;
 
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ message: 'Invalid ID format' });
+  }
+
   try {
     const review = await Review.findByIdAndUpdate(id, { status: 'hidden' }, { new: true });
     if (!review) {
@@ -80,6 +90,10 @@ exports.hideReview = async (req, res) => {
 
 exports.deleteReview = async (req, res) => {
   const { id } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ message: 'Invalid ID format' });
+  }
 
   try {
     const review = await Review.findByIdAndDelete(id);

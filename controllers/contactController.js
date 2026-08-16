@@ -1,4 +1,6 @@
+const mongoose = require('mongoose');
 const Inquiry = require('../models/Inquiry');
+
 
 exports.submitInquiry = async (req, res) => {
   try {
@@ -34,6 +36,10 @@ exports.getInquiries = async (req, res) => {
 
 exports.deleteInquiry = async (req, res) => {
   const { id } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ message: 'Invalid ID format' });
+  }
 
   try {
     const inquiry = await Inquiry.findByIdAndDelete(id);
