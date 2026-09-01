@@ -2,6 +2,8 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const Admin = require('../models/Admin');
 
+const JWT_SECRET = process.env.JWT_SECRET || 'avenix_core_secret_key_2026_jwt_token';
+
 exports.login = async (req, res) => {
   const { username, password } = req.body;
 
@@ -22,8 +24,8 @@ exports.login = async (req, res) => {
 
     const token = jwt.sign(
       { id: admin._id, username: admin.username },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      JWT_SECRET,
+      { expiresIn: '7d' }
     );
 
     res.json({
@@ -35,3 +37,20 @@ exports.login = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+exports.verifyToken = async (req, res) => {
+  try {
+    const admin = await Admin.findById(req.admin.id).select('-password');
+    if (!admin) {
+      return res.status(404).json({ valid: false, message: 'Admin user not found' });
+    }
+
+    res.json({
+      valid: true,
+      admin: { id: admin._id, username: admin.username }
+    });
+  } catch (error) {
+    res.status(500).json({ valid: false, message: error.message });
+  }
+};
+

@@ -4,8 +4,8 @@ import {
 } from 'lucide-react';
 import { 
   getPortfolioProjects, savePortfolioProject, updatePortfolioProject, deletePortfolioProject, reorderProjects,
-  getPortfolioStats, savePortfolioStats, getReviews, approveReview, hideReview, deleteReview, 
-  loginAdmin, logoutAdmin, isLoggedIn,
+  getPortfolioStats, savePortfolioStats, getAdminReviews, approveReview, hideReview, deleteReview, 
+  loginAdmin, logoutAdmin, isLoggedIn, verifyAdminSession,
   type Project, type FeedbackReview 
 } from '../../services/storage';
 
@@ -48,11 +48,36 @@ export default function Admin() {
   // Status/Alert State
   const [alertMsg, setAlertMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Load data on mount / auth change
+  // Auth sync & session verification
   useEffect(() => {
+    const handleAuthEvent = (e: Event) => {
+      const customEvent = e as CustomEvent<{ isAuth: boolean; reason?: string }>;
+      if (!customEvent.detail?.isAuth) {
+        setIsAuth(false);
+        setProjects([]);
+        setReviews([]);
+        if (customEvent.detail?.reason === 'expired') {
+          setAuthError('Your session has expired. Please log in again.');
+        }
+      }
+    };
+
+    window.addEventListener('admin-auth-changed', handleAuthEvent);
+
     if (isAuth) {
-      loadAllData();
+      verifyAdminSession().then((isValid) => {
+        if (!isValid) {
+          setIsAuth(false);
+          setAuthError('Your session has expired. Please log in again.');
+        } else {
+          loadAllData();
+        }
+      });
     }
+
+    return () => {
+      window.removeEventListener('admin-auth-changed', handleAuthEvent);
+    };
   }, [isAuth]);
 
   const loadAllData = () => {
@@ -69,7 +94,7 @@ export default function Admin() {
       })
       .catch(err => console.error('Stats load failed:', err));
 
-    getReviews()
+    getAdminReviews()
       .then(setReviews)
       .catch(err => console.error('Reviews load failed:', err));
   };
@@ -107,6 +132,7 @@ export default function Admin() {
     setReviews([]);
     showAlert('success', 'Logged out.');
   };
+
 
   // Open form for adding a project
   const handleOpenAddForm = () => {

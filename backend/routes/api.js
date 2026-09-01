@@ -18,6 +18,7 @@ const uploadController = require('../controllers/uploadController');
 
 // 1. Auth routes
 router.post('/admin/auth/login', authController.login);
+router.get('/admin/auth/verify', authenticateAdmin, authController.verifyToken);
 
 // 2. Project routes (Public & Admin)
 router.get('/projects', projectController.getProjects);
