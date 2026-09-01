@@ -189,20 +189,26 @@ export default function Admin() {
       shortDescription: projectShortDesc.trim(),
       description: projectDesc.trim(),
       thumbnail: projectThumbnail.trim(),
-      gallery: editingProject ? editingProject.gallery : [projectThumbnail.trim()],
+      gallery: editingProject && editingProject.gallery && editingProject.gallery.length > 0 
+        ? editingProject.gallery 
+        : [projectThumbnail.trim()],
       technologies: techArray,
       projectUrl: projectUrl.trim(),
       githubUrl: projectGithub.trim(),
-      featured: projectFeatured
+      featured: projectFeatured,
+      order: projectOrder
     };
 
     if (editingProject) {
-      // Update
-      updatePortfolioProject(editingProject.slug, {
-        ...projectData,
-        order: projectOrder
-      })
-        .then(() => {
+      // Update existing project using MongoDB _id (or fallback slug)
+      const projectId = editingProject._id || editingProject.slug;
+      updatePortfolioProject(projectId, projectData)
+        .then((updatedProject) => {
+          setProjects(prev => prev.map(p => {
+            const isMatch = (p._id && updatedProject._id && p._id === updatedProject._id) || 
+                            (p.slug && editingProject.slug && p.slug === editingProject.slug);
+            return isMatch ? updatedProject : p;
+          }));
           showAlert('success', 'Project updated successfully.');
           setIsProjectFormOpen(false);
           setEditingProject(null);
@@ -212,9 +218,16 @@ export default function Admin() {
           showAlert('error', err.message || 'Failed to update project.');
         });
     } else {
-      // Save New
+      // Save New Project
       savePortfolioProject(projectData)
-        .then(() => {
+        .then((savedProject) => {
+          setProjects(prev => {
+            const exists = prev.some(p => (p._id && savedProject._id && p._id === savedProject._id) || (p.slug === savedProject.slug));
+            if (!exists) {
+              return [...prev, savedProject].sort((a, b) => (a.order || 0) - (b.order || 0));
+            }
+            return prev;
+          });
           showAlert('success', 'New project added successfully.');
           setIsProjectFormOpen(false);
           setEditingProject(null);
@@ -226,12 +239,17 @@ export default function Admin() {
     }
   };
 
-  // Handle deleting project
-  const handleDeleteProject = (slug: string) => {
-    if (window.confirm('Are you sure you want to delete this project?')) {
-      deletePortfolioProject(slug)
+  // Handle deleting project using MongoDB _id
+  const handleDeleteProject = (proj: Project) => {
+    if (window.confirm(`Are you sure you want to delete "${proj.title}"?`)) {
+      const projectId = proj._id || proj.slug;
+      deletePortfolioProject(projectId)
         .then(deleted => {
           if (deleted) {
+            setProjects(prev => prev.filter(p => {
+              if (proj._id && p._id) return p._id !== proj._id;
+              return p.slug !== proj.slug;
+            }));
             showAlert('success', 'Project deleted successfully.');
             loadAllData();
           } else {
@@ -252,14 +270,23 @@ export default function Admin() {
     listCopy[index] = listCopy[targetIdx];
     listCopy[targetIdx] = temp;
 
-    const slugs = listCopy.map(p => p.slug);
-    reorderProjects(slugs)
-      .then(() => {
-        loadAllData();
+    const reordered = listCopy.map((p, idx) => ({ ...p, order: idx + 1 }));
+    setProjects(reordered);
+
+    const ids = reordered.map(p => p._id || p.slug);
+    reorderProjects(ids)
+      .then((updatedList) => {
+        if (Array.isArray(updatedList) && updatedList.length > 0) {
+          setProjects(updatedList);
+        }
         showAlert('success', 'Display order updated.');
       })
-      .catch(err => showAlert('error', err.message || 'Failed to reorder projects.'));
+      .catch(err => {
+        showAlert('error', err.message || 'Failed to reorder projects.');
+        loadAllData();
+      });
   };
+
 
   // Save Stats
   const handleSaveStats = (e: React.FormEvent) => {
@@ -670,7 +697,7 @@ export default function Admin() {
                   </thead>
                   <tbody className="divide-y divide-brand-green/5">
                     {projects.map((proj, idx) => (
-                      <tr key={proj.slug} className="hover:bg-brand-dark-green/5 transition-colors duration-200">
+                      <tr key={proj._id || proj.slug || idx} className="hover:bg-brand-dark-green/5 transition-colors duration-200">
                         {/* Order Operations */}
                         <td className="py-4 px-6 font-semibold select-none text-sm text-brand-lime">
                           <div className="flex items-center gap-3">
@@ -740,7 +767,7 @@ export default function Admin() {
                               <Edit2 className="w-4 h-4" />
                             </button>
                             <button
-                              onClick={() => handleDeleteProject(proj.slug)}
+                              onClick={() => handleDeleteProject(proj)}
                               className="p-2 rounded-md hover:bg-red-950/20 text-brand-textSecondary hover:text-red-400 transition-all duration-300 min-h-[44px] min-w-[44px] flex items-center justify-center"
                               title="Delete Project"
                             >
@@ -750,6 +777,7 @@ export default function Admin() {
                         </td>
                       </tr>
                     ))}
+
 
                     {projects.length === 0 && (
                       <tr>

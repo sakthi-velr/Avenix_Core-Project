@@ -5,6 +5,8 @@
 */
 
 export interface Project {
+  _id?: string;
+  id?: string;
   title: string;
   slug: string;
   category: 'Websites' | 'Posters' | 'Web Invitations' | 'Digital Marketing';
@@ -193,7 +195,7 @@ export const getPortfolioProjects = async (): Promise<Project[]> => {
   return res.json();
 };
 
-export const savePortfolioProject = async (project: Omit<Project, 'slug' | 'order'>): Promise<Project> => {
+export const savePortfolioProject = async (project: Omit<Project, 'slug' | '_id' | 'id'> & { slug?: string; order?: number }): Promise<Project> => {
   const res = await authFetch('/admin/projects', {
     method: 'POST',
     body: JSON.stringify(project)
@@ -205,8 +207,8 @@ export const savePortfolioProject = async (project: Omit<Project, 'slug' | 'orde
   return res.json();
 };
 
-export const updatePortfolioProject = async (slug: string, updatedData: Partial<Project>): Promise<Project> => {
-  const res = await authFetch(`/admin/projects/${slug}`, {
+export const updatePortfolioProject = async (idOrSlug: string, updatedData: Partial<Project>): Promise<Project> => {
+  const res = await authFetch(`/admin/projects/${idOrSlug}`, {
     method: 'PUT',
     body: JSON.stringify(updatedData)
   });
@@ -217,23 +219,27 @@ export const updatePortfolioProject = async (slug: string, updatedData: Partial<
   return res.json();
 };
 
-export const deletePortfolioProject = async (slug: string): Promise<boolean> => {
-  const res = await authFetch(`/admin/projects/${slug}`, {
+export const deletePortfolioProject = async (idOrSlug: string): Promise<boolean> => {
+  const res = await authFetch(`/admin/projects/${idOrSlug}`, {
     method: 'DELETE'
   });
-  if (!res.ok) throw new Error('Failed to delete project');
-  const data = await res.json();
-  return data.success;
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Failed to delete project');
+  }
+  const data = await res.json().catch(() => ({ success: true }));
+  return data.success !== undefined ? data.success : true;
 };
 
-export const reorderProjects = async (slugs: string[]): Promise<Project[]> => {
+export const reorderProjects = async (idsOrSlugs: string[]): Promise<Project[]> => {
   const res = await authFetch('/admin/projects/reorder', {
     method: 'PUT',
-    body: JSON.stringify({ slugs })
+    body: JSON.stringify({ slugs: idsOrSlugs, ids: idsOrSlugs })
   });
   if (!res.ok) throw new Error('Failed to reorder projects');
   return res.json();
 };
+
 
 // STATS API (Public & Admin)
 export const getPortfolioStats = async (): Promise<Stats> => {

@@ -23,9 +23,14 @@ router.get('/admin/auth/verify', authenticateAdmin, authController.verifyToken);
 // 2. Project routes (Public & Admin)
 router.get('/projects', projectController.getProjects);
 router.post('/admin/projects', authenticateAdmin, projectController.createProject);
+router.post('/projects', authenticateAdmin, projectController.createProject);
 router.put('/admin/projects/reorder', authenticateAdmin, projectController.reorderProjects);
-router.put('/admin/projects/:slug', authenticateAdmin, projectController.updateProject);
-router.delete('/admin/projects/:slug', authenticateAdmin, projectController.deleteProject);
+router.put('/projects/reorder', authenticateAdmin, projectController.reorderProjects);
+router.put('/admin/projects/:id', authenticateAdmin, projectController.updateProject);
+router.put('/projects/:id', authenticateAdmin, projectController.updateProject);
+router.delete('/admin/projects/:id', authenticateAdmin, projectController.deleteProject);
+router.delete('/projects/:id', authenticateAdmin, projectController.deleteProject);
+
 
 // 3. Stats routes (Public & Admin)
 router.get('/stats', statController.getStats);
