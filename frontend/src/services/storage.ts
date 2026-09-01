@@ -153,14 +153,38 @@ export const loginAdmin = async (username: string, password: string) => {
 export const verifyAdminSession = async (): Promise<boolean> => {
   if (!isLoggedIn()) return false;
   try {
-    const res = await authFetch('/admin/auth/verify', { method: 'GET' });
-    if (!res.ok) return false;
-    const data = await res.json();
+    const token = localStorage.getItem('adminToken');
+    if (!token) return false;
+
+    const res = await fetch(`${API_BASE_URL}/admin/auth/verify`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (res.status === 401 || res.status === 403) {
+      logoutAdmin('expired');
+      return false;
+    }
+
+    // If backend hasn't redeployed verify route yet (404), fall back to client-side validity
+    if (res.status === 404) {
+      return isLoggedIn();
+    }
+
+    if (!res.ok) {
+      return false;
+    }
+
+    const data = await res.json().catch(() => ({}));
     return !!data.valid;
   } catch {
-    return false;
+    // If backend network error, rely on non-expired local token
+    return isLoggedIn();
   }
 };
+
 
 // PROJECTS API (Public & Admin)
 export const getPortfolioProjects = async (): Promise<Project[]> => {

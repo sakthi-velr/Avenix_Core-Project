@@ -48,7 +48,7 @@ export default function Admin() {
   // Status/Alert State
   const [alertMsg, setAlertMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Auth sync & session verification
+  // Auth sync & mount session check
   useEffect(() => {
     const handleAuthEvent = (e: Event) => {
       const customEvent = e as CustomEvent<{ isAuth: boolean; reason?: string }>;
@@ -64,21 +64,24 @@ export default function Admin() {
 
     window.addEventListener('admin-auth-changed', handleAuthEvent);
 
-    if (isAuth) {
+    if (isLoggedIn()) {
       verifyAdminSession().then((isValid) => {
         if (!isValid) {
           setIsAuth(false);
           setAuthError('Your session has expired. Please log in again.');
         } else {
+          setIsAuth(true);
           loadAllData();
         }
       });
+    } else {
+      setIsAuth(false);
     }
 
     return () => {
       window.removeEventListener('admin-auth-changed', handleAuthEvent);
     };
-  }, [isAuth]);
+  }, []);
 
   const loadAllData = () => {
     getPortfolioProjects()
@@ -117,6 +120,8 @@ export default function Admin() {
       .then(() => {
         setIsLoggingIn(false);
         setIsAuth(true);
+        setAuthError('');
+        loadAllData();
         showAlert('success', 'Logged in successfully.');
       })
       .catch(err => {
@@ -124,6 +129,7 @@ export default function Admin() {
         setAuthError(err.message || 'Invalid username or password.');
       });
   };
+
 
   const handleLogout = () => {
     logoutAdmin();
