@@ -614,27 +614,28 @@ export default function Admin() {
 
                     {/* Live URL */}
                     <div className="flex flex-col space-y-2">
-                      <label className="text-xs font-bold text-brand-textSecondary uppercase tracking-wider">Live Project URL</label>
+                      <label className="text-xs font-bold text-brand-textSecondary uppercase tracking-wider">Live Project URL (Optional)</label>
                       <input
-                        type="url"
+                        type="text"
                         value={projectUrl}
                         onChange={(e) => setProjectUrl(e.target.value)}
-                        placeholder="https://myproject.demo"
+                        placeholder="https://myproject.demo (optional)"
                         className="px-4 py-3 rounded-lg bg-black/60 border border-brand-green/10 text-white placeholder-brand-textMuted focus:border-brand-green/50 focus:outline-none transition-all duration-300 min-h-[44px]"
                       />
                     </div>
 
                     {/* Github URL */}
                     <div className="flex flex-col space-y-2">
-                      <label className="text-xs font-bold text-brand-textSecondary uppercase tracking-wider">GitHub Repository URL</label>
+                      <label className="text-xs font-bold text-brand-textSecondary uppercase tracking-wider">GitHub Repository URL (Optional)</label>
                       <input
-                        type="url"
+                        type="text"
                         value={projectGithub}
                         onChange={(e) => setProjectGithub(e.target.value)}
-                        placeholder="https://github.com/..."
+                        placeholder="https://github.com/... (optional)"
                         className="px-4 py-3 rounded-lg bg-black/60 border border-brand-green/10 text-white placeholder-brand-textMuted focus:border-brand-green/50 focus:outline-none transition-all duration-300 min-h-[44px]"
                       />
                     </div>
+
 
                     {/* Featured Checkbox & Display Order */}
                     <div className="flex items-center gap-6 md:col-span-2 py-2 select-none">
