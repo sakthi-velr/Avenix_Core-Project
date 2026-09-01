@@ -208,10 +208,19 @@ export const savePortfolioProject = async (project: Omit<Project, 'slug' | '_id'
 };
 
 export const updatePortfolioProject = async (idOrSlug: string, updatedData: Partial<Project>): Promise<Project> => {
-  const res = await authFetch(`/admin/projects/${idOrSlug}`, {
+  let res = await authFetch(`/admin/projects/${idOrSlug}`, {
     method: 'PUT',
     body: JSON.stringify(updatedData)
   });
+
+  // If 404 and slug exists and is different from idOrSlug, fallback retry with slug
+  if (res.status === 404 && updatedData.slug && updatedData.slug !== idOrSlug) {
+    res = await authFetch(`/admin/projects/${updatedData.slug}`, {
+      method: 'PUT',
+      body: JSON.stringify(updatedData)
+    });
+  }
+
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message || 'Failed to update project');
@@ -219,10 +228,18 @@ export const updatePortfolioProject = async (idOrSlug: string, updatedData: Part
   return res.json();
 };
 
-export const deletePortfolioProject = async (idOrSlug: string): Promise<boolean> => {
-  const res = await authFetch(`/admin/projects/${idOrSlug}`, {
+export const deletePortfolioProject = async (idOrSlug: string, slugFallback?: string): Promise<boolean> => {
+  let res = await authFetch(`/admin/projects/${idOrSlug}`, {
     method: 'DELETE'
   });
+
+  // If 404 and fallback slug provided, retry with slug
+  if (res.status === 404 && slugFallback && slugFallback !== idOrSlug) {
+    res = await authFetch(`/admin/projects/${slugFallback}`, {
+      method: 'DELETE'
+    });
+  }
+
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message || 'Failed to delete project');
@@ -230,6 +247,7 @@ export const deletePortfolioProject = async (idOrSlug: string): Promise<boolean>
   const data = await res.json().catch(() => ({ success: true }));
   return data.success !== undefined ? data.success : true;
 };
+
 
 export const reorderProjects = async (idsOrSlugs: string[]): Promise<Project[]> => {
   const res = await authFetch('/admin/projects/reorder', {

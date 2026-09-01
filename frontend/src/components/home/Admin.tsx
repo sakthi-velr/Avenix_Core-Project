@@ -202,7 +202,12 @@ export default function Admin() {
     if (editingProject) {
       // Update existing project using MongoDB _id (or fallback slug)
       const projectId = editingProject._id || editingProject.slug;
-      updatePortfolioProject(projectId, projectData)
+      const payloadWithSlug = {
+        ...projectData,
+        slug: editingProject.slug
+      };
+
+      updatePortfolioProject(projectId, payloadWithSlug)
         .then((updatedProject) => {
           setProjects(prev => prev.map(p => {
             const isMatch = (p._id && updatedProject._id && p._id === updatedProject._id) || 
@@ -239,11 +244,11 @@ export default function Admin() {
     }
   };
 
-  // Handle deleting project using MongoDB _id
+  // Handle deleting project using MongoDB _id (with slug fallback)
   const handleDeleteProject = (proj: Project) => {
     if (window.confirm(`Are you sure you want to delete "${proj.title}"?`)) {
       const projectId = proj._id || proj.slug;
-      deletePortfolioProject(projectId)
+      deletePortfolioProject(projectId, proj.slug)
         .then(deleted => {
           if (deleted) {
             setProjects(prev => prev.filter(p => {
@@ -259,6 +264,7 @@ export default function Admin() {
         .catch(err => showAlert('error', err.message || 'Failed to delete project.'));
     }
   };
+
 
   // Handle project reordering
   const handleMoveProject = (index: number, direction: 'up' | 'down') => {
